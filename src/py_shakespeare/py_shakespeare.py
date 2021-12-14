@@ -7,10 +7,33 @@ from bs4 import BeautifulSoup
 import re
 
 class shake_play:
+    """
+    Base class to obtain the list of Shakespeare play. This class will obtain data from DraCor API and merge the data to genre of Shakespeare play that was obtained by scraping "www.opensourceshakespeare,org" website.
+    """
+    
     def __init__(self, min_num_character = 20, **kwargs):
+        """
+        Set minimum number of character, length of the play, and complexity of the play
+
+        Attributes
+        ----------
+        min_num_character : int
+          Minimum number of characters in the play.
+        play_length : str, optional
+          Relative length of the play category: Low, Medium, or High.
+        play_complexity : str, optional
+          Relative complexity of the play category: Low, Medium, or High.
+
+        Examples
+        --------
+        >>> from py_shakespeare import py_shakespeare
+        >>> play = py_shakespeare.shake_play(min_num_character = 40, play_length = "Medium")
+        >>> print(play)
+        >>> <__main__.shake_play object at 0x11f6776a0>
+        """
         assert isinstance(min_num_character, int), f"This function only works on integers"
         
-        r = requests.get(f"https://dracor.org/api/corpora/shake/metadata")
+        r = requests.get("https://dracor.org/api/corpora/shake/metadata")
         status = r.status_code
         if status==404:
             raise Exception("404 : error (failed to make request)")
@@ -28,6 +51,8 @@ class shake_play:
 
             shake_merge['popularity'] = pd.qcut(shake_merge['wikipediaLinkCount'], 3, labels=["Low", "Medium", "High"]) 
             shake_merge['play_complexity'] = pd.qcut(shake_merge['averageDegree'], 3, labels=["Low", "Medium", "High"]) 
+           
+            # based on literature review saying that play speech usually is 170 words per minute
             shake_merge['play_length_hr'] = shake_merge['wordCountSp'].apply(lambda s: s/170/60)
             shake_merge['play_length'] = pd.qcut(shake_merge['play_length_hr'], 3, labels=["Low", "Medium", "High"]) 
 
@@ -52,16 +77,84 @@ class shake_play:
             self.df = self.df.sort_values(by='wikipediaLinkCount', ascending=False, ignore_index = True)
 
     def get_summary(self):
+        """
+        Obtain summary table of the class obtained from shake_play() function.
+        
+        Returns
+        -------
+        pandas.core.frame.DataFrame
+          A dataframe containing summarized information of Shakespeare plays from the class. The variables in this table include:
+              * title: title of the play
+              * popularity: relative popularity (from the number of Wikipedia links referring to this play) to other plays with similar minimum number of character
+              * genre: genre of the play (based on Open Source Shakespeare website)
+              * num_character: number of character/cast in this play
+              * play_length: relative length of the play to other plays with similar minimum number of character. Obtained by using number of words variable divided by rate of speech in a drama (170 words per minute)
+              * play_complexity: relative complexity of the play to other plays with similar minimum number of character. Obtained by using average degree of dialogue between each character in the play
+
+        Examples
+        --------
+        >>> from py_shakespeare import py_shakespeare
+        >>> play = py_shakespeare.shake_play(min_num_character = 40, play_length = "Medium")
+        >>> play.get_summary()
+         	title	popularity	genre	num_character	play_length	play_complexity
+        0	Henry VIII	Low	History	48	Medium	Low
+        1	Henry VI, Part III	Low	History	49	Medium	Medium
+        """
+        
         summary = ["title", "popularity", "genre", "num_character", "play_length", "play_complexity"]
         filtered = self.df[summary]
         return filtered
 
     def get_complete(self):
+        """
+        Obtain summary table of the class obtained from shake_play() function.
+        
+        Returns
+        -------
+        pandas.core.frame.DataFrame
+          A dataframe containing complete information of Shakespeare plays from the class. The variables in this table are information in the summary table added by:
+              * num_male_character: number of male character/cast in this play
+              * num_female_character: number of female character/cast in this play
+              * num_unknown_character: number of unknown gender character/cast in this play
+              * num_scene: number of scene/segment in this play
+              * play_length_hr: length of the play in hours. Obtained by using number of words variable divided by rate of speech in a drama (170 words per minute)
+
+        Examples
+        --------
+        >>> from py_shakespeare import py_shakespeare
+        >>> play = py_shakespeare.shake_play(min_num_character = 40, play_length = "Medium")
+        >>> play.get_complete()
+         	title	popularity	genre	num_male_character	num_female_character	num_unknown_character	num_scene	play_complexity	play_length_hr
+        0	Henry VIII	Low	History	33	4	5	18	Low	2.454804
+        1	Henry VI, Part III	Low	History	26	2	8	28	Medium	2.478039
+        """
+
         data = ["title", "popularity", "genre", "num_male_character", "num_female_character", "num_unknown_character", "num_scene", "play_complexity", "play_length_hr"]
         filtered = self.df[data]
         return filtered
     
     def get_script(self, row = 1):
+        """
+        Download xml script of the selected play.
+        
+        Parameters
+        ----------
+        row : int
+          Position of the play from the table which script we want to obtained (start from 1).
+        
+        Returns
+        -------
+        str
+          information that your data has been downloaded in your folder
+
+        Examples
+        --------
+        >>> from py_shakespeare import py_shakespeare
+        >>> play = py_shakespeare.shake_play(min_num_character = 40, play_length = "Medium")
+        >>> play.get_script(row = 2)
+        Your script is saved as xml document
+        """
+
         assert row<=len(self.df.index), f"Selected row is out of range"
         shake_merge = self.df
         playname = shake_merge.loc[row-1,'name']
@@ -71,15 +164,83 @@ class shake_play:
         print("Your script is saved as xml document")
     
 
+    
 class shake_monologue:
+    """
+    Base class to obtain a list of monologues from Shakespeare plays. This class will obtain data from both DraCor and The Folger Shakespeare API to help user choose monologue based on several inputs.
+    """
+    
     def __init__(self, gender = "ALL", min_line = 30, include_all = True, **kwargs):
+        """
+        Set gender of the monologues speaker, minimum line of monologue, and list of plays which monologues want to be obtained
+
+        Attributes
+        ----------
+        gender : str
+          Gender of the monologues speaker: ALL, UNKNOWN, MALE, or FEMALE.
+        min_line : int
+          Number of minimum line in the monologue
+        include_all : bool
+          Whether we want to include all plays from Shakespeare or not. WARNING: choosing True might result in a long wait for the function to run.
+        play_list : arrays, optional
+          Array of Folger id of plays we want to be included in the search for monologues. Folger id can be found below.
+          ==========  ==============================
+          Folger ID   Play Name
+          ==========  ==============================
+          AWW         All's Well That Ends Well
+          Ant         Antony and Cleopatra
+          AYLAs       You Like It
+          Err         The Comedy of Errors
+          Cor         Coriolanus
+          Cym         Cymbeline
+          Ham         Hamlet
+          1H4         Henry IV, Part 1
+          2H4         Henry IV, Part 2
+          H5          Henry V
+          1H6         Henry VI, Part 1
+          2H6         Henry VI, Part 2
+          3H6         Henry VI, Part 3
+          H8          Henry VIII
+          JC          Julius Caesar
+          Jn          King John
+          Lr          King Lear
+          LLL         Love's Labor's Lost
+          Mac         Macbeth
+          MM          Measure for Measure
+          MV          The Merchant of Venice
+          Wiv         The Merry Wives of Windsor
+          MND         A Midsummer Night's Dream
+          Ado         Much Ado About Nothing
+          Oth         Othello
+          Per         Pericles
+          R2          Richard II
+          R3          Richard III
+          Rom         Romeo and Juliet
+          Shr         The Taming of the Shrew
+          Tmp         The Tempest
+          Tim         Timon of Athens
+          Tit         Titus Andronicus
+          Tro         Troilus and Cressida
+          TN          Twelfth Night
+          TGV         Two Gentlemen of Verona
+          TNK         Two Noble Kinsmen
+          WT          The Winter's Tale
+          ==========  ==============================
+          
+        Examples
+        --------
+        >>> from py_shakespeare import py_shakespeare
+        >>> ml = shake_monologue(gender = "ALL", min_line = 30, include_all = False, play_list = ["Rom", "Ham"])
+        >>> print(ml)
+        >>> <__main__.shake_monologue object at 0x11ff41ac0>
+        """
         
         assert gender in ["ALL", "FEMALE", "MALE"], "Input of gender should be 'ALL', 'FEMALE', or 'MALE'"
         assert min_line>0, "Minimum line of monologue should be positive"
-    
+        
         dict = {'folger' : ["AWW","Ant","AYL","Err","Cor","Cym","Ham","1H4","2H4","H5","1H6","2H6","3H6","H8","JC","Jn","Lr","LLL","Mac","MM","MV","Wiv","MND","Ado","Oth","Per","R2","R3","Rom","Shr","Tmp","Tim","Tit","Tro","TN","TGV","WT"],
                 'play' : ["all-s-well-that-ends-well","antony-and-cleopatra","as-you-like-it","the-comedy-of-errors","coriolanus","cymbeline","hamlet","henry-iv-part-i","henry-iv-part-ii","henry-v","henry-vi-part-1","henry-vi-part-2","henry-vi-part-3","henry-viii","julius-caesar","king-john","king-lear","love-s-labor-s-lost","macbeth","measure-for-measure","the-merchant-of-venice","the-merry-wives-of-windsor","a-midsummer-night-s-dream","much-ado-about-nothing","othello","pericles","richard-ii","richard-iii","romeo-and-juliet","the-taming-of-the-shrew","the-tempest","timon-of-athens","titus-andronicus","troilus-and-cressida","twelfth-night","two-gentlemen-of-verona","the-winter-s-tale"]}
-                
+        
         folger_table = pd.DataFrame.from_dict(dict)
 
         if include_all == True:
@@ -129,11 +290,67 @@ class shake_monologue:
         self.df = pd.merge(cast_table, mono_table, how='inner', on=['name'])
         self.df = self.df.sort_values(by=['degree', 'line_num'], ascending=False, ignore_index=True)
    
-    def get_summary(self): 
+    def get_summary(self):
+
+        """
+        Obtain summary table of the class obtained from shake_monologue() function.
+        
+        Returns
+        -------
+        pandas.core.frame.DataFrame
+          A dataframe containing summarized information of Shakespeare plays from the class. The variables in this table include:
+              * play: title of the play
+              * name: name of the character
+              * gender: gender of the character
+              * degree: how many other characters this character interacted with
+              * monologue_link: Link to the monologue
+              * line_num: number of lines of the monologue
+
+        Examples
+        --------
+        >>> from py_shakespeare import py_shakespeare
+        >>> ml = shake_monologue(gender = "ALL", min_line = 40, include_all = False, play_list = ["Rom", "Ham"])
+        >>> ml.get_summary()
+        	play	name	gender	degree	monologue_link	line_num
+        0	romeo-and-juliet	Romeo	MALE	31	http://www.folgerdigitaltexts.org/Rom/segment/...	47
+        1	hamlet	Hamlet	None	29	http://www.folgerdigitaltexts.org/Ham/segment/...	60
+        2	romeo-and-juliet	Juliet	FEMALE	21	http://www.folgerdigitaltexts.org/Rom/segment/...	46
+        3	romeo-and-juliet	Friar Lawrence	MALE	18	http://www.folgerdigitaltexts.org/Rom/segment/...	51
+        4	romeo-and-juliet	Friar Lawrence	MALE	18	http://www.folgerdigitaltexts.org/Rom/segment/...	41
+        5	romeo-and-juliet	Mercutio	MALE	10	http://www.folgerdigitaltexts.org/Rom/segment/...	43
+        6	hamlet	The Ghost	None	5	http://www.folgerdigitaltexts.org/Ham/segment/...	50
+        """
+
         summary = self.df
         return summary
     
-    def get_complexity(self):        
+    def get_complexity(self):
+        
+        """
+        Obtain table of the class obtained from shake_monologue() function plus the complexity of each monologue. Complexity score were calculated using `Flesch Kincaid Grade readibility score <https://readable.com/readability/flesch-reading-ease-flesch-kincaid-grade-level/>`_
+        
+        Returns
+        -------
+        pandas.core.frame.DataFrame
+          A dataframe containing complete information of Shakespeare plays from the class. The variables in this table are information in the summary table added by:
+              * complexity_score: Flesch Kincaid Grade readibility score
+              * complexity_category: Complexity category based on the readibility score
+
+        Examples
+        --------
+        >>> from py_shakespeare import py_shakespeare
+        >>> ml = shake_monologue(gender = "ALL", min_line = 40, include_all = False, play_list = ["Rom", "Ham"])
+        >>> ml.get_complexity()
+        	play	name	gender	degree	monologue_link	line_num	complexity_score	complexity_category
+        0	romeo-and-juliet	Romeo	MALE	31	http://www.folgerdigitaltexts.org/Rom/segment/...	47	7.55	Average
+        1	hamlet	Hamlet	None	29	http://www.folgerdigitaltexts.org/Ham/segment/...	60	6.70	Average
+        2	romeo-and-juliet	Juliet	FEMALE	21	http://www.folgerdigitaltexts.org/Rom/segment/...	46	16.88	Skilled
+        3	romeo-and-juliet	Friar Lawrence	MALE	18	http://www.folgerdigitaltexts.org/Rom/segment/...	51	19.13	Advanced
+        4	romeo-and-juliet	Friar Lawrence	MALE	18	http://www.folgerdigitaltexts.org/Rom/segment/...	41	24.53	Advanced
+        5	romeo-and-juliet	Mercutio	MALE	10	http://www.folgerdigitaltexts.org/Rom/segment/...	43	70.50	Advanced
+        6	hamlet	The Ghost	None	5	http://www.folgerdigitaltexts.org/Ham/segment/...	50	24.44	Advanced        
+        """
+
         for i in range(len(self.df)):
             url = self.df["monologue_link"][i]
             r = requests.get(url)
@@ -163,6 +380,27 @@ class shake_monologue:
         return complex
     
     def get_script(self, row = 1):
+        """
+        Download txt script of the selected monologue.
+        
+        Parameters
+        ----------
+        row : int
+          Position of the monologue from the table which script we want to obtained (start from 1).
+        
+        Returns
+        -------
+        str
+          information that your data has been downloaded in your folder
+
+        Examples
+        --------
+        >>> from py_shakespeare import py_shakespeare
+        >>> ml = shake_monologue(gender = "ALL", min_line = 40, include_all = False, play_list = ["Rom", "Ham"])
+        >>> ml.get_script(row = 2)
+        Your monologue script is saved as txt document
+        """
+
         assert row<=len(self.df.index), f"Selected row is out of range"
         
         script = self.df
