@@ -14,12 +14,12 @@ $ pip install py_shakespeare
 
 #### shake_play
 
-shake_play(min_num_character=20, play_complexity, play_length)
+`shake_play(min_num_character=20, play_complexity, play_length)`
 > Base class to obtain the list of Shakespeare play based on minimum number of character, length of the play, and complexity of the play. This class will obtain data from DraCor API and merge the data to genre of Shakespeare play that was obtained by scraping "www.opensourceshakespeare.org" website.
 
 #### shake_monologue
 
-shake_monologue(gender='ALL', min_line=30, include_all=True, play_list)
+`shake_monologue(gender='ALL', min_line=30, include_all=True, play_list)`
 > Base class to obtain a list of monologues from Shakespeare plays based on gender of the monologues speaker, minimum line of monologue, and list of plays which monologues want to be obtained. This class will obtain data from both DraCor and The Folger Shakespeare API to help user choose monologue based on several inputs.
 
 ### How to use
