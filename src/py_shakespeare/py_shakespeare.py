@@ -8,29 +8,27 @@ import re
 
 class shake_play:
     """
-    Base class to obtain the list of Shakespeare play. This class will obtain data from DraCor API and merge the data to genre of Shakespeare play that was obtained by scraping "www.opensourceshakespeare,org" website.
+    Base class to obtain the list of Shakespeare play based on minimum number of character, length of the play, and complexity of the play. This class will obtain data from DraCor API and merge the data to genre of Shakespeare play that was obtained by scraping "www.opensourceshakespeare.org" website.
+    
+    Attributes
+    ----------
+    min_num_character : int
+      Minimum number of characters in the play.
+    play_length : str, optional
+      Relative length of the play category: Low, Medium, or High.
+    play_complexity : str, optional
+      Relative complexity of the play category: Low, Medium, or High.
+      
+    Examples
+    --------
+    >>> from py_shakespeare import py_shakespeare
+    >>> play = py_shakespeare.shake_play(min_num_character = 40, play_length = "Medium")
+    >>> print(play)
+    >>> <__main__.shake_play object at 0x11f6776a0>
     """
     
     def __init__(self, min_num_character = 20, **kwargs):
-        """
-        Set minimum number of character, length of the play, and complexity of the play
 
-        Attributes
-        ----------
-        min_num_character : int
-          Minimum number of characters in the play.
-        play_length : str, optional
-          Relative length of the play category: Low, Medium, or High.
-        play_complexity : str, optional
-          Relative complexity of the play category: Low, Medium, or High.
-
-        Examples
-        --------
-        >>> from py_shakespeare import py_shakespeare
-        >>> play = py_shakespeare.shake_play(min_num_character = 40, play_length = "Medium")
-        >>> print(play)
-        >>> <__main__.shake_play object at 0x11f6776a0>
-        """
         assert isinstance(min_num_character, int), f"This function only works on integers"
         
         r = requests.get("https://dracor.org/api/corpora/shake/metadata")
@@ -167,73 +165,66 @@ class shake_play:
     
 class shake_monologue:
     """
-    Base class to obtain a list of monologues from Shakespeare plays. This class will obtain data from both DraCor and The Folger Shakespeare API to help user choose monologue based on several inputs.
-    """
+    Base class to obtain a list of monologues from Shakespeare plays based on gender of the monologues speaker, minimum line of monologue, and list of plays which monologues want to be obtained. This class will obtain data from both DraCor and The Folger Shakespeare API to help user choose monologue based on several inputs.
     
-    def __init__(self, gender = "ALL", min_line = 30, include_all = True, **kwargs):
-        """
-        Set gender of the monologues speaker, minimum line of monologue, and list of plays which monologues want to be obtained
+    Attributes
+    ----------
+    gender : str
+      Gender of the monologues speaker: ALL, UNKNOWN, MALE, or FEMALE.
+    min_line : int
+      Number of minimum line in the monologue
+    include_all : bool
+      Whether we want to include all plays from Shakespeare or not. WARNING: choosing True might result in a long wait for the function to run.
+    play_list : arrays, optional
+      Array of Folger id of plays we want to be included in the search for monologues. List of Folger id can be found below:
+          * **AWW**: All's Well That Ends Well
+          * **Ant**: Antony and Cleopatra
+          * **AYL**: As You Like It
+          * **Err**: The Comedy of Errors
+          * **Cor**: Coriolanus
+          * **Cym**: Cymbeline
+          * **Ham**: Hamlet
+          * **1H4**: Henry IV, Part 1
+          * **2H4**: Henry IV, Part 2
+          * **H5**: Henry V
+          * **1H6**: Henry VI, Part 1
+          * **2H6**: Henry VI, Part 2
+          * **3H6**: Henry VI, Part 3
+          * **H8**: Henry VIII
+          * **JC**: Julius Caesar
+          * **Jn**: King John
+          * **Lr**: King Lear
+          * **LLL**: Love's Labor's Lost
+          * **Mac**: Macbeth
+          * **MM**: Measure for Measure
+          * **MV**: The Merchant of Venice
+          * **Wiv**: The Merry Wives of Windsor
+          * **MND**: A Midsummer Night's Dream
+          * **Ado**: Much Ado About Nothing
+          * **Oth**: Othello
+          * **Per**: Pericles
+          * **R2**: Richard II
+          * **R3**: Richard III
+          * **Rom**: Romeo and Juliet
+          * **Shr**: The Taming of the Shrew
+          * **Tmp**: The Tempest
+          * **Tim**: Timon of Athens
+          * **Tit**: Titus Andronicus
+          * **Tro**: Troilus and Cressida
+          * **TN**: Twelfth Night
+          * **TGV**: Two Gentlemen of Verona
+          * **TNK**: Two Noble Kinsmen
+          * **WT**: The Winter's Tale
 
-        Attributes
-        ----------
-        gender : str
-          Gender of the monologues speaker: ALL, UNKNOWN, MALE, or FEMALE.
-        min_line : int
-          Number of minimum line in the monologue
-        include_all : bool
-          Whether we want to include all plays from Shakespeare or not. WARNING: choosing True might result in a long wait for the function to run.
-        play_list : arrays, optional
-          Array of Folger id of plays we want to be included in the search for monologues. Folger id can be found below.
-          ==========  ==============================
-          Folger ID   Play Name
-          ==========  ==============================
-          AWW         All's Well That Ends Well
-          Ant         Antony and Cleopatra
-          AYLAs       You Like It
-          Err         The Comedy of Errors
-          Cor         Coriolanus
-          Cym         Cymbeline
-          Ham         Hamlet
-          1H4         Henry IV, Part 1
-          2H4         Henry IV, Part 2
-          H5          Henry V
-          1H6         Henry VI, Part 1
-          2H6         Henry VI, Part 2
-          3H6         Henry VI, Part 3
-          H8          Henry VIII
-          JC          Julius Caesar
-          Jn          King John
-          Lr          King Lear
-          LLL         Love's Labor's Lost
-          Mac         Macbeth
-          MM          Measure for Measure
-          MV          The Merchant of Venice
-          Wiv         The Merry Wives of Windsor
-          MND         A Midsummer Night's Dream
-          Ado         Much Ado About Nothing
-          Oth         Othello
-          Per         Pericles
-          R2          Richard II
-          R3          Richard III
-          Rom         Romeo and Juliet
-          Shr         The Taming of the Shrew
-          Tmp         The Tempest
-          Tim         Timon of Athens
-          Tit         Titus Andronicus
-          Tro         Troilus and Cressida
-          TN          Twelfth Night
-          TGV         Two Gentlemen of Verona
-          TNK         Two Noble Kinsmen
-          WT          The Winter's Tale
-          ==========  ==============================
-          
-        Examples
-        --------
-        >>> from py_shakespeare import py_shakespeare
-        >>> ml = shake_monologue(gender = "ALL", min_line = 30, include_all = False, play_list = ["Rom", "Ham"])
-        >>> print(ml)
-        >>> <__main__.shake_monologue object at 0x11ff41ac0>
-        """
+    Examples
+    --------
+    >>> from py_shakespeare import py_shakespeare
+    >>> ml = shake_monologue(gender = "ALL", min_line = 30, include_all = False, play_list = ["Rom", "Ham"])
+    >>> print(ml)
+    >>> <__main__.shake_monologue object at 0x11ff41ac0>
+    """
+
+    def __init__(self, gender = "ALL", min_line = 30, include_all = True, **kwargs):
         
         assert gender in ["ALL", "FEMALE", "MALE"], "Input of gender should be 'ALL', 'FEMALE', or 'MALE'"
         assert min_line>0, "Minimum line of monologue should be positive"
