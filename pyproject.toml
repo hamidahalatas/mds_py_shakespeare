@@ -5,6 +5,9 @@ description = "Python package to obtain Shakespeare script and monologue"
 authors = ["Hamidah Alatas"]
 license = "MIT"
 readme = "README.md"
+documentation = 'https://py-shakespeare.readthedocs.io/en/latest/'
+homepage = "https://github.com/hamidahalatas/mds_py_shakespeare"
+repository = "https://github.com/hamidahalatas/mds_py_shakespeare"
 
 [tool.poetry.dependencies]
 python = "^3.9"
