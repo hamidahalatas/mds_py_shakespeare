@@ -20,6 +20,8 @@ lxml = "^4.7.1"
 myst-nb = "^0.13.1"
 sphinx-autoapi = "^1.8.4"
 sphinx-rtd-theme = "^1.0.0"
+pytest = "^6.2.5"
+pytest-cov = "^3.0.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
