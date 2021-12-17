@@ -1,6 +1,7 @@
 # py_shakespeare
 
 `py_shakespeare` is a Python package to obtain Shakespeare script and monologue.
+Documentation can be found in [readthedocs](https://py-shakespeare.readthedocs.io/en/latest/)
 
 ## Installation
 
