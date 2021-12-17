@@ -42,6 +42,7 @@ $ pip install py_shakespeare
     >>> pl.get_summary()
     ```
     This function returned a table with following variables:
+    
         * title: title of the play
         * popularity: relative popularity (from the number of Wikipedia links referring to this play) to other plays with similar minimum number of character
         * genre: genre of the play (based on Open Source Shakespeare website)
@@ -54,6 +55,7 @@ $ pip install py_shakespeare
     >>> pl.get_complete()
     ```
     This function returned a table with same variables of summary table plus below variables:
+    
         * num_male_character: number of male character/cast in this play
         * num_female_character: number of female character/cast in this play
         * num_unknown_character: number of unknown gender character/cast in this play
@@ -77,6 +79,7 @@ $ pip install py_shakespeare
     >>> ml.get_summary()
     ```
     This function returned a table with following variables:
+    
         * play: title of the play
         * name: name of the character
         * gender: gender of the character
@@ -89,6 +92,7 @@ $ pip install py_shakespeare
     >>> ml.get_complexity()
     ```
     This function returned a summary table with 2 additional variables:
+    
         * complexity_score: Flesch Kincaid Grade readibility score
         * complexity_category: Complexity category based on the readibility score
         
